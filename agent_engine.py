@@ -14,18 +14,19 @@ if str(deepagents_path) not in sys.path:
 from deepagents.graph import create_deep_agent
 from deepagents.backends.filesystem import FilesystemBackend
 
-def run_document_engineer(task: str, api_key: str, base_url: str, model_name: str, working_directory: str, callbacks=None):
+def run_deep_agent(task: str, api_key: str, base_url: str, model_name: str, working_directory: str, callbacks=None, system_prompt: str = None):
     """
-    Runs the Document Engineer agent with the given configuration.
+    Runs the generic Deep Agent with the given configuration and system prompt.
     """
     
-    # Load the specific system prompt
-    prompt_path = current_dir / "ralph_mode" / "document_engineer.md"
-    try:
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            base_system_prompt = f.read()
-    except FileNotFoundError:
-        base_system_prompt = "You are a helpful assistant." # Fallback
+    # Load default system prompt if not provided
+    if not system_prompt:
+        prompt_path = current_dir / "ralph_mode" / "document_engineer.md"
+        try:
+            with open(prompt_path, "r", encoding="utf-8") as f:
+                system_prompt = f.read()
+        except FileNotFoundError:
+            system_prompt = "You are a helpful assistant." # Fallback
 
     # Initialize OpenAI-compatible model
     model = ChatOpenAI(
@@ -50,7 +51,7 @@ def run_document_engineer(task: str, api_key: str, base_url: str, model_name: st
     # We pass the custom system prompt and the backend factory.
     agent = create_deep_agent(
         model=model,
-        system_prompt=base_system_prompt,
+        system_prompt=system_prompt,
         backend=backend_factory,
     )
 
@@ -59,14 +60,24 @@ def run_document_engineer(task: str, api_key: str, base_url: str, model_name: st
     # For Streamlit, we might want to yield chunks.
     
     # Input structure
-    inputs = {
-        "messages": [
-            {"role": "user", "content": task}
-        ]
-    }
+    try:
+        inputs = {
+            "messages": [
+                {"role": "user", "content": task}
+            ]
+        }
+        stream = agent.astream(inputs, config={"callbacks": callbacks, "recursion_limit": 150})
+    except Exception as e:
+        # Fallback for sync/async compatibility issues or different agent structures
+        print(f"Error starting stream: {e}")
+        raise e
     
     # Use astream for streaming events
-    return agent.astream(inputs, config={"callbacks": callbacks})
+    # Return both the agent (for graph viz) and the stream
+    return agent, stream
+
+# Alias for backward compatibility
+run_document_engineer = run_deep_agent
 
 if __name__ == "__main__":
     # Test run
