@@ -21,7 +21,7 @@ def run_deep_agent(task: str, api_key: str, base_url: str, model_name: str, work
     
     # Load default system prompt if not provided
     if not system_prompt:
-        prompt_path = current_dir / "ralph_mode" / "document_engineer.md"
+        prompt_path = current_dir / "prompts" / "document_engineer.md"
         try:
             with open(prompt_path, "r", encoding="utf-8") as f:
                 system_prompt = f.read()
