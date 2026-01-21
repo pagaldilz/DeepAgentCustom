@@ -9,7 +9,7 @@ from langfuse.langchain import CallbackHandler
 current_dir = Path(__file__).parent
 deepagents_path = current_dir / "deepagents"
 if str(deepagents_path) not in sys.path:
-    sys.path.append(str(deepagents_path))
+    sys.path.insert(0, str(deepagents_path))
 
 from deepagents.graph import create_deep_agent
 from deepagents.backends.filesystem import FilesystemBackend
