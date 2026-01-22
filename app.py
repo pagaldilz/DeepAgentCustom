@@ -37,6 +37,9 @@ if page == "Configuration":
         lf_sk = st.text_input("Langfuse Secret Key", value=os.getenv("LANGFUSE_SECRET_KEY", ""), type="password")
         lf_host = st.text_input("Langfuse Host", value=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com"))
         
+        st.subheader("Advanced")
+        recursion_limit = st.number_input("Recursion Limit", min_value=1, max_value=1000, value=int(os.getenv("RECURSION_LIMIT", 150)), help="Maximum number of steps the agent can take.")
+
         submitted = st.form_submit_button("Save Configuration")
         
         if submitted:
@@ -46,7 +49,9 @@ if page == "Configuration":
             set_key(env_path, "OPENAI_MODEL_NAME", model_name)
             set_key(env_path, "LANGFUSE_PUBLIC_KEY", lf_pk)
             set_key(env_path, "LANGFUSE_SECRET_KEY", lf_sk)
+            set_key(env_path, "LANGFUSE_SECRET_KEY", lf_sk)
             set_key(env_path, "LANGFUSE_HOST", lf_host)
+            set_key(env_path, "RECURSION_LIMIT", str(recursion_limit))
             
             # Update session state / env vars immediately
             os.environ["OPENAI_API_KEY"] = api_key
@@ -55,6 +60,7 @@ if page == "Configuration":
             os.environ["LANGFUSE_PUBLIC_KEY"] = lf_pk
             os.environ["LANGFUSE_SECRET_KEY"] = lf_sk
             os.environ["LANGFUSE_HOST"] = lf_host
+            os.environ["RECURSION_LIMIT"] = str(recursion_limit)
             
             st.success("Configuration saved and environment updated!")
 
@@ -107,6 +113,10 @@ elif page == "Agent Runner":
     with st.expander("Advanced Configuration"):
         output_dir_input = st.text_input("Output Directory:", value=os.path.join(os.getcwd(), "docs"), help="Where documentation/artifacts should be saved.")
         doc_language = st.selectbox("Documentation Language:", ["English", "Chinese", "Spanish", "French", "German"])
+        
+        # Runtime recursion limit override (defaults to env var)
+        default_recursion = int(os.getenv("RECURSION_LIMIT", 150))
+        recursion_limit_run = st.number_input("Recursion Limit (Runtime)", min_value=1, max_value=2000, value=default_recursion, help="Override the global recursion limit for this run.")
 
     task_input = st.text_area("Enter your task:", height=100, placeholder="Analyze the current directory and generate specific outputs...")
     
@@ -124,7 +134,7 @@ elif page == "Agent Runner":
         st.session_state.messages.append({"role": "user", "content": f"**[{selected_label if selected_label else 'Default'}]** {task_input}"})
         
         # Create Tabs
-        tab_exec, tab_plan = st.tabs(["Execution", "Planning"])
+        tab_plan, tab_exec = st.tabs(["Planning", "Execution"])
         
         with tab_exec:
             output_container = st.container()
@@ -188,7 +198,7 @@ elif page == "Agent Runner":
                 
                 with st.spinner(f"Agent ({selected_label}) is planning and executing..."):
                     # Get agent and stream (updated to handle tuple return)
-                    agent, event_stream = run_deep_agent(task_input, api_key, base_url, model_name, working_dir_input, callbacks, system_prompt=system_prompt)
+                    agent, event_stream = run_deep_agent(task_input, api_key, base_url, model_name, working_dir_input, callbacks, system_prompt=system_prompt, recursion_limit=recursion_limit_run)
 
                     # Visualize Graph
                     try:

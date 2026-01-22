@@ -14,7 +14,7 @@ if str(deepagents_path) not in sys.path:
 from deepagents.graph import create_deep_agent
 from deepagents.backends.filesystem import FilesystemBackend
 
-def run_deep_agent(task: str, api_key: str, base_url: str, model_name: str, working_directory: str, callbacks=None, system_prompt: str = None):
+def run_deep_agent(task: str, api_key: str, base_url: str, model_name: str, working_directory: str, callbacks=None, system_prompt: str = None, recursion_limit: int = 150):
     """
     Runs the generic Deep Agent with the given configuration and system prompt.
     """
@@ -66,7 +66,7 @@ def run_deep_agent(task: str, api_key: str, base_url: str, model_name: str, work
                 {"role": "user", "content": task}
             ]
         }
-        stream = agent.astream(inputs, config={"callbacks": callbacks, "recursion_limit": 150})
+        stream = agent.astream(inputs, config={"callbacks": callbacks, "recursion_limit": recursion_limit})
     except Exception as e:
         # Fallback for sync/async compatibility issues or different agent structures
         print(f"Error starting stream: {e}")
