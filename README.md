@@ -19,22 +19,20 @@ This project implements a custom Deep Agent using LangChain, Langfuse, and OpenA
     cd DeepAgentCustom
     ```
 
-2.  **Create a Virtual Environment (Optional but recommended):**
-    ```bash
-    python -m venv venv
-    .\venv\Scripts\Activate.ps1
+2.  **Run automated setup (Windows):**
+    Double-click `run_setup.bat` or run it from the terminal:
+    ```powershell
+    .\run_setup.bat
     ```
+    This script will:
+    - Create a Python virtual environment (`.venv`) if it doesn't exist.
+    - Upgrade `pip`.
+    - Install all necessary dependencies from `requirements.txt`.
 
-3.  **Install Dependencies:**
-    This project requires the following packages:
-    - `streamlit`
-    - `langchain-openai`
-    - `langfuse`
-    - `python-dotenv`
-    
-    You can install them via pip:
-    ```bash
-    pip install streamlit langchain-openai langfuse python-dotenv
+3.  **Activate the environment:**
+    To activate the environment manually for development:
+    ```powershell
+    .\.venv\Scripts\Activate.ps1
     ```
 
 4.  **Configuration:**
