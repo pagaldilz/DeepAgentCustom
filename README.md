@@ -111,3 +111,9 @@ The system includes over 20 specialized agent roles to handle specific software 
 - **Observability & Security**:
   - **Langfuse Integration**: Deep tracing of all agent steps, tool calls, and LLM interactions.
   - **Sandboxed Environment**: Filesystem backend ensures the agent operates safely within the specified working directory.
+
+- **🛡️ Anti-Recursion & Efficiency**:
+  - **Resource Monitoring**: Real-time middleware tracks and enforces hard limits on file reads (max 30) and execution steps (max 50) to prevent infinite loops.
+  - **Automated Finalization**: Detects when 80% of tasks are complete and automatically triggers the agent to finalize and output results.
+  - **Operational Constraints**: Injected system-level directives ensure the agent prioritizes drafting over exhaustive searching when nearing limits.
+  - **Heuristic Discovery**: Agent is instructed to use `ls -R` and pattern recognition to avoid redundant directory traversal.
