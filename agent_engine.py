@@ -13,6 +13,40 @@ if str(deepagents_path) not in sys.path:
 
 from deepagents.graph import create_deep_agent
 from deepagents.backends.filesystem import FilesystemBackend
+from custom_middleware import ResourceLimitMiddleware, TodoCompletionMiddleware
+
+ANTI_RECURSION_PROMPT = """
+# Operational Directives (Anti-Recursion)
+
+## Discovery Limit 
+Perform a single `ls -R` or `list_directory` to map the structure. Do not visit every subdirectory individually.
+
+## Stop Condition
+Stop all `read_file` operations after accessing 30 core files (prioritize entry points like app.py, graph.py, and nodes.py).
+
+## Heuristic Analysis
+If you encounter a large directory of similar files (e.g., utility scripts or prompts), read only one to understand the pattern, then deduce the rest.
+
+## Action Priority
+Prioritize generating the final response over gathering 100% complete data. Use placeholders for missing low-level details if necessary to avoid hitting the recursion limit.
+
+## Completion Criteria - YOU MUST FINISH when ANY of these occur:
+- ✅ Read 30 files
+- ✅ Executed 50 tool calls  
+- ✅ Generated draft documentation
+- ✅ 80% of todos marked complete
+- ✅ Have 80% confidence in analysis
+
+**CRITICAL**: Use completion phrases in your response:
+- "ANALYSIS COMPLETE"
+- "FINAL REPORT"
+- "DOCUMENTATION READY"
+
+This signals the system to terminate gracefully.
+
+## Constraint
+If you reach 20 steps without a final answer, stop researching and output the best possible draft based on the information gathered so far. You must deliver a result rather than crashing.
+"""
 
 def run_deep_agent(task: str, api_key: str, base_url: str, model_name: str, working_directory: str, callbacks=None, system_prompt: str = None, recursion_limit: int = 150):
     """
@@ -27,6 +61,9 @@ def run_deep_agent(task: str, api_key: str, base_url: str, model_name: str, work
                 system_prompt = f.read()
         except FileNotFoundError:
             system_prompt = "You are a helpful assistant." # Fallback
+
+    # Inject Anti-Recursion Directives
+    system_prompt += f"\n\n{ANTI_RECURSION_PROMPT}"
 
     # Initialize OpenAI-compatible model
     model = ChatOpenAI(
@@ -47,12 +84,17 @@ def run_deep_agent(task: str, api_key: str, base_url: str, model_name: str, work
     def backend_factory(rt):
         return FilesystemBackend(root_dir=working_directory, virtual_mode=True)
 
+    # Create custom middleware for resource limits
+    resource_middleware = ResourceLimitMiddleware(max_file_reads=30, max_steps=50)
+    todo_middleware = TodoCompletionMiddleware(completion_threshold=0.8)
+    
     # Create the Deep Agent
-    # We pass the custom system prompt and the backend factory.
+    # We pass the custom system prompt, backend factory, and custom middleware.
     agent = create_deep_agent(
         model=model,
         system_prompt=system_prompt,
         backend=backend_factory,
+        middleware=[resource_middleware, todo_middleware],
     )
 
     # Invoke the agent
